@@ -27,6 +27,7 @@ namespace Loja.Controllers
             cart = AplicaPromocoes(cart);
             TempData["carrinho"] = cart;
             TempData.Keep();
+            Console.Write("Aloooa");
             return View("Index",cart);
         }
 
