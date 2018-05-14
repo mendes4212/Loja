@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Loja.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
@@ -8,9 +9,12 @@ namespace Loja.Controllers
 {
     public class HomeController : Controller
     {
+        private ApplicationDbContext db = new ApplicationDbContext();
+
         public ActionResult Index()
         {
-            return View();
+            var produtos = PegaProdutos();
+            return View(produtos);
         }
 
         public ActionResult About()
@@ -25,6 +29,11 @@ namespace Loja.Controllers
             ViewBag.Message = "Your contact page.";
 
             return View();
+        }
+
+        public List<Produto> PegaProdutos()
+        {
+            return db.Produtos.ToList();
         }
     }
 }

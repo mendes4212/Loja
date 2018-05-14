@@ -9,6 +9,7 @@ using Microsoft.AspNet.Identity;
 using Microsoft.AspNet.Identity.Owin;
 using Microsoft.Owin.Security;
 using Loja.Models;
+using System.Collections.Generic;
 
 namespace Loja.Controllers
 {
@@ -17,6 +18,7 @@ namespace Loja.Controllers
     {
         private ApplicationSignInManager _signInManager;
         private ApplicationUserManager _userManager;
+        public ApplicationDbContext context = new ApplicationDbContext();
 
         public AccountController()
         {
@@ -52,6 +54,120 @@ namespace Loja.Controllers
             }
         }
 
+        #region CRUD Usuário
+        [Authorize(Roles = "Administrador")]
+        public List<ApplicationUser> PegaLista()
+        {
+            var users = context.Users.ToList();
+            return users;
+        }
+
+        public bool ValidaCPF(string cpf, int ID = 0)
+        {
+            using (var context = new ApplicationDbContext())
+            {
+                var user = context.Users.FirstOrDefault(u => u.CPF == cpf);
+                if (user != null)
+                {
+                    if (ID != user.ClienteID)
+                        return false;
+                    else
+                        return true;
+                }
+                else
+                    return true;
+            }
+        }
+        [Authorize(Roles = "Administrador")]
+        public ApplicationUser PegaUsuario(int ID)
+        {
+            var user = context.Users.FirstOrDefault(u => u.ClienteID == ID);
+            return user;
+        }
+        [Authorize(Roles = "Administrador")]
+        public ApplicationUser PegaUsuarioPorCPF(string cpf)
+        {
+            var user = context.Users.FirstOrDefault(u => u.CPF == cpf);
+            return user;
+        }
+        
+        [Authorize(Roles = "Administrador")]
+        [HttpGet]
+        public ActionResult EditaUsuario(int ID)
+        {
+            var model = PegaUsuario(ID);
+            return View(model);
+        }
+
+        [Authorize(Roles = "Administrador")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public ActionResult EditaUsuario(EditarUsuarioViewModel model)
+        {
+            var user = PegaUsuario(model.ClienteID);
+            if (!ModelState.IsValid)
+            {
+                return View(user);
+            }
+            var valido = ValidaCPF(model.CPF, model.ClienteID);
+            if (valido)
+            {
+                //var user = PegaUsuario(model.ClienteID);
+                var usero = PegaUsuario(model.ClienteID);
+                if (user == null)
+                {
+                    return RedirectToAction("UsuariosLista", "Admin");
+                }
+
+                user.DataModificacao = DateTime.Now;
+                user.Nome = model.Nome;
+                user.Email = model.Email;
+                user.CPF = model.CPF;
+                user.DataNascimento = model.DataNascimento;
+                user.Ativo = model.Ativo;
+                user.Telefone = model.Telefone;
+                try
+                {
+                    context.Entry(usero).CurrentValues.SetValues(user);
+                    context.SaveChanges();
+                    return RedirectToAction("UsuariosLista", "Admin");
+                }
+                catch (Exception e)
+                {
+                    ModelState.AddModelError("Erro", e);
+                    return View(user);
+                }
+            }
+            ModelState.AddModelError("CPF", "CPF já existente");
+            return View(user);
+        }
+
+        [Authorize(Roles = "Administrador")]
+        public ActionResult MudaSituacao(int ID)
+        {
+            var user = PegaUsuario(ID);
+            var usero = PegaUsuario(ID);
+
+            if (user.Ativo == true)
+                user.Ativo = false;
+            else
+                user.Ativo = true;
+
+            try
+            {
+                context.Entry(usero).CurrentValues.SetValues(user);
+                context.SaveChanges();
+                return RedirectToAction("UsuariosLista", "Admin");
+            }
+            catch (Exception e)
+            {
+                ModelState.AddModelError("Erro", e);
+                return RedirectToAction("UsuariosLista", "Admin");
+            }
+        }
+        #endregion
+
+
         //
         // GET: /Account/Login
         [AllowAnonymous]
@@ -73,21 +189,29 @@ namespace Loja.Controllers
                 return View(model);
             }
 
-            // This doesn't count login failures towards account lockout
-            // To enable password failures to trigger account lockout, change to shouldLockout: true
-            var result = await SignInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberMe, shouldLockout: false);
-            switch (result)
+            // Valida situação do usuário antes do login
+            var usr = UserManager.FindByEmail(model.Email);
+            if (usr.Ativo)
             {
-                case SignInStatus.Success:
-                    return RedirectToLocal(returnUrl);
-                case SignInStatus.LockedOut:
-                    return View("Lockout");
-                case SignInStatus.RequiresVerification:
-                    return RedirectToAction("SendCode", new { ReturnUrl = returnUrl, RememberMe = model.RememberMe });
-                case SignInStatus.Failure:
-                default:
-                    ModelState.AddModelError("", "Invalid login attempt.");
-                    return View(model);
+                var result = await SignInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberMe, shouldLockout: false);
+                switch (result)
+                {
+                    case SignInStatus.Success:
+                        return RedirectToLocal(returnUrl);
+                    case SignInStatus.LockedOut:
+                        return View("Lockout");
+                    case SignInStatus.RequiresVerification:
+                        return RedirectToAction("SendCode", new { ReturnUrl = returnUrl, RememberMe = model.RememberMe });
+                    case SignInStatus.Failure:
+                    default:
+                        ModelState.AddModelError("", "Usuário ou senha incorretos.");
+                        return View(model);
+                }
+            }
+            else
+            {
+                ModelState.AddModelError("", "Usuário inativo.");
+                return View(model);
             }
         }
 
@@ -151,18 +275,37 @@ namespace Loja.Controllers
         {
             if (ModelState.IsValid)
             {
-                var user = new ApplicationUser { UserName = model.Email, Email = model.Email };
+                Random rnd = new Random();
+                var user = new ApplicationUser
+                {
+                    UserName = model.Email,
+                    Email = model.Email,
+                    ClienteID = rnd.Next(1, 10000),
+                    Nome = model.Nome,
+                    DataCadastro = DateTime.Now,
+                    DataModificacao = DateTime.Now,
+                    Telefone = model.Telefone,
+                    Ativo = true,
+                    CPF = model.CPF,
+                    DataNascimento = model.DataNascimento,
+                };
+                var valido = ValidaCPF(model.CPF);
+                if (!valido)
+                {
+                    ModelState.AddModelError("CPF", "CPF já está em uso");
+                    return View(model);
+                }
                 var result = await UserManager.CreateAsync(user, model.Password);
                 if (result.Succeeded)
                 {
-                    await SignInManager.SignInAsync(user, isPersistent:false, rememberBrowser:false);
-                    
+                    await SignInManager.SignInAsync(user, isPersistent: false, rememberBrowser: false);
+
                     // For more information on how to enable account confirmation and password reset please visit https://go.microsoft.com/fwlink/?LinkID=320771
                     // Send an email with this link
                     // string code = await UserManager.GenerateEmailConfirmationTokenAsync(user.Id);
                     // var callbackUrl = Url.Action("ConfirmEmail", "Account", new { userId = user.Id, code = code }, protocol: Request.Url.Scheme);
                     // await UserManager.SendEmailAsync(user.Id, "Confirm your account", "Please confirm your account by clicking <a href=\"" + callbackUrl + "\">here</a>");
-
+                    await this.UserManager.AddToRoleAsync(user.Id, "Cliente");
                     return RedirectToAction("Index", "Home");
                 }
                 AddErrors(result);

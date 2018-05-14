@@ -1,0 +1,90 @@
+﻿@model Loja.Models.Promocao
+
+@{
+    ViewBag.Title = "Edit";
+    Layout = "~/Views/Shared/_AdminPage.cshtml";
+
+    var Produtos = (List<Loja.Models.Produto>)TempData["Produtos"];
+
+    List<SelectListItem> listaProdutos = new List<SelectListItem>();
+    foreach (var item in Produtos)
+    {
+        listaProdutos.Add(new SelectListItem { Text = item.Nome, Value = item.ProdutosID.ToString() });
+    }
+}
+
+<h2>Edição de promoção</h2>
+
+
+@using (Html.BeginForm())
+{
+    @Html.AntiForgeryToken()
+
+    <div class="form-horizontal">
+        <hr />
+        @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+        @Html.HiddenFor(model => model.PromocaoID)
+        @Html.HiddenFor(model => model.produto.ProdutosID, new { id = "ProdutoID" })
+        <div class="form-group">
+            @Html.LabelFor(model => model.Descricao, htmlAttributes: new { @class = "control-label col-md-2" })
+            <div class="col-md-10">
+                @Html.EditorFor(model => model.Descricao, new { htmlAttributes = new { @class = "form-control" } })
+                @Html.ValidationMessageFor(model => model.Descricao, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="col-md-10">
+                @Html.LabelFor(model => model.produto, htmlAttributes: new { @class = "control-label col-md-2" })
+                @Html.DropDownList("produtoid", listaProdutos, "Selecione um produto", new { @class = "form-control" })
+            </div>
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(model => model.DataValidade, htmlAttributes: new { @class = "control-label col-md-2" })
+            <div class="col-md-10">
+                @Html.EditorFor(model => model.DataValidade, new { htmlAttributes = new { @class = "form-control" } })
+                @Html.ValidationMessageFor(model => model.DataValidade, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(model => model.Quantidade, htmlAttributes: new { @class = "control-label col-md-2" })
+            <div class="col-md-10">
+                @Html.EditorFor(model => model.Quantidade, new { htmlAttributes = new { @class = "form-control" } })
+                @Html.ValidationMessageFor(model => model.Quantidade, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+        <div class="form-group">
+            @Html.LabelFor(model => model.Desconto, htmlAttributes: new { @class = "control-label col-md-2" })
+            <div class="col-md-10">
+                @Html.EditorFor(model => model.Desconto, new { htmlAttributes = new { @class = "form-control" } })
+                @Html.ValidationMessageFor(model => model.Desconto, "", new { @class = "text-danger" })
+            </div>
+        </div>
+
+        <div class="form-group">
+            <div class="col-md-offset-2 col-md-10">
+                <input type="submit" value="Save" class="btn btn-default" />
+                @Html.ActionLink("Voltar para lista", "Index")
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+    @Scripts.Render("~/bundles/jquery")
+    @Scripts.Render("~/bundles/inputmask")
+    <script>
+        $(document).ready(function () {
+            $("#DataValidade").inputmask({ "mask": "99/99/9999" });
+            var id = $("#ProdutoID").val();
+
+            $('#produtoid option[value='+id+']').attr('selected', 'selected');
+        });
+
+
+    </script>
+}

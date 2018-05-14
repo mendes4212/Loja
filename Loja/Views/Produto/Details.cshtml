@@ -1,0 +1,123 @@
+﻿@model Loja.Models.Produto
+
+@{
+    ViewBag.Title = "Minha Loja";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var promocoes = (Loja.Models.Promocao)TempData["promos"];
+}
+
+
+<div class="container">
+    <div class="card">
+        <div class="row">
+            <aside class="col-sm-7">
+                <article class="card-body p-5">
+                    <h3 class="title mb-3" id="Nome">@Model.Nome</h3>
+                    <p class="price-detail-wrap">
+                        <span class="price h3 text-success">
+                            <span class="currency">R$</span><span class="num" id="PrecoVenda">@Model.PrecoVenda</span>
+                        </span>
+                        - Preço unitário
+                    </p>
+                    <dl class="item-property">
+                        <dt>Descrição</dt>
+                        <dd>
+                            <p id="Descricao">
+                                @Model.Descricao
+                            </p>
+                        </dd>
+                    </dl>
+                    @if (promocoes != null)
+                    {
+                            <dl class="item-property">
+                                <dt>Promoções</dt>
+                                <dd>
+                                    <p>Comprando @promocoes.Quantidade você ganha @promocoes.Desconto% de desconto!</p>
+                                </dd>
+                            </dl>
+                    }
+                    <div class="row">
+                        <div class="col-sm-5">
+                            <dl class="param param-inline">
+                                <dt>Quantidade: </dt>
+                                <dd>
+                                    <select class="form-control form-control-sm" style="width:70px;" id="Quantidade">
+                                        @for (var i = 1; i <= Model.Quantidade; i++)
+                                        {
+                                            <option> @i </option>
+                                        }
+                                    </select>
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                    <hr>
+                    <button class="btn btn-primary" id="Comprar"> Comprar agora </button>
+                    <a href="#" class="btn btn-outline-primary"> <i class="fas fa-shopping-cart"></i> Adicionar ao carrinho </a>
+                </article>
+            </aside>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+    @Scripts.Render("~/bundles/jquery")
+    @Scripts.Render("~/bundles/inputmask")
+    <script>
+        $(document).ready(function () {
+            $("#DataValidade").inputmask({ "mask": "99/99/9999" });
+            //MontaLista();
+        });
+
+        $("#Comprar").click(function (event) {
+            postViaAjax();
+        });
+
+        function postViaAjax() {
+            var dados = {}
+            dados["ProdutosID"] = "@Model.ProdutosID";
+            dados["Quantidade"] = $("#Quantidade").val();
+            dados["Nome"] = "@Model.Nome";
+            dados["Descricao"] = "@Model.Descricao";
+            dados["PrecoVenda"] = "@Model.PrecoVenda";
+            console.log(dados);
+
+            var baseurl = window.location.origin;
+
+            $.ajax({
+                type: "POST",
+                url: baseurl+"/Carrinho/AdicionaItemCarrinho",
+                data: dados,
+                success: function (response) {
+                    window.location.href = baseurl+"/Carrinho/";
+                },
+                error: function (response) {
+                    alert(response.error);
+                }
+            });
+            /*
+            var dadosbd = $('#Banco').val();
+            var usuariobanco = $('#UsuarioBD').val();
+            var senhabanco = $('#SenhaBD').val();
+            var tipo = $("#Tipo").val();
+
+            if (usuariobanco == "" || senhabanco == "") {
+                $("#retornomsg").show();
+                $("#retornomsg").html("<strong>Preencha usuário e senha!</strong>");
+            }
+
+            else {
+                $("#retornomsg").slideUp();
+                var dados = {}
+                dados["banco"] = dadosbd;
+                dados["UsuarioBanco"] = usuariobanco;
+                dados["SenhaBanco"] = senhabanco;
+                dados["Tipo"] = tipo;
+                dados["Servidor"] = $("#Servidor").val();
+
+                
+            }*/
+        }
+    </script>
+}

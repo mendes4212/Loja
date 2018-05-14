@@ -1,0 +1,53 @@
+﻿@model IEnumerable<Loja.Models.Promocao>
+
+@{
+    ViewBag.Title = "Promoções";
+    Layout = "~/Views/Shared/_AdminPage.cshtml";
+}
+
+<h2>Promoções</h2>
+
+<p>
+    @Html.ActionLink("Adicionar nova promoção", "Create")
+</p>
+@Html.ValidationSummary(true, "", new { @class = "text-danger" })
+<table class="table">
+    <tr>
+        <th>
+            @Html.DisplayNameFor(model => model.Descricao)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.DataValidade)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.Quantidade)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.Desconto)
+        </th>
+        <th></th>
+    </tr>
+
+    @foreach (var item in Model)
+    {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.Descricao)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.DataValidade)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Quantidade)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Desconto)
+            </td>
+            <td>
+                @Html.ActionLink("Editar", "Edit", new { id = item.PromocaoID }) |
+                @Html.ActionLink("Mudar situação", "Delete", new { id = item.PromocaoID })
+            </td>
+        </tr>
+    }
+
+</table>
